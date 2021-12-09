@@ -1,0 +1,99 @@
+-- Data Cleaning 
+SELECT *
+FROM Marketing..marketing
+-- each row is an individual customer, each customer has a unique row ID
+------------------------------ Data Cleaning ----------------------------
+-- Check all columns for null values 
+SELECT *
+FROM Marketing..marketing
+WHERE Country IS NULL -- Income(24) is the only column with null values 
+
+-- Replace null income values with avg income for education level
+SELECT [ Income ], Education
+FROM Marketing..marketing
+WHERE [ Income ] IS NULL -- PhD, Graduation, 2n Cycle, Master
+
+SELECT AVG([ Income ])
+FROM Marketing..marketing
+WHERE Education = 'PhD' AND Marital_Status = 'Widow' -- PhD = $56,145.31, Graduation = $52,720.37, 2n Cycle = $47,633.19, Master = $52,917.53
+
+SELECT [ Income ],
+CASE
+	WHEN [ Income ] IS NULL AND Education = 'PhD' then 56145.31
+	WHEN [ Income ] IS NULL AND Education = 'Graduation' then 52720.37
+	WHEN [ Income ] IS NULL AND Education = '2n Cycle' then 47633.19
+	WHEN [ Income ] IS NULL AND Education = 'Master' then 52917.53
+	ELSE [ Income ] 
+END
+FROM Marketing..marketing -- test case statement 
+
+UPDATE Marketing..marketing
+SET [ Income ] =	CASE
+							WHEN [ Income ] IS NULL AND Education = 'PhD' then 56145.31
+							WHEN [ Income ] IS NULL AND Education = 'Graduation' then 52720.37
+							WHEN [ Income ] IS NULL AND Education = '2n Cycle' then 47633.19
+							WHEN [ Income ] IS NULL AND Education = 'Master' then 52917.53
+							ELSE [ Income ] 	
+					END; -- replace null income values with avg income for education 
+
+-- Extract year, month, and day from date and delete old column ------- 
+ALTER TABLE Marketing..marketing 
+ADD Join_Date Date;
+
+UPDATE Marketing..marketing
+SET Join_Date = CONVERT(Date,Dt_Customer);
+
+ALTER TABLE Marketing..marketing
+DROP COLUMN Join_Year;
+
+ALTER TABLE Marketing..marketing
+ADD Join_Year int;
+
+UPDATE Marketing..marketing
+SET Join_Year = DATEPART(year, Join_Date);
+
+ALTER TABLE Marketing..marketing
+ADD Join_Month int;
+
+UPDATE Marketing..marketing
+SET Join_Month = DATEPART(month, Join_Date);
+
+ALTER TABLE Marketing..marketing 
+ADD Join_Day int; 
+
+UPDATE Marketing..marketing
+SET Join_Day = DATEPART(day, Join_Date);
+
+--------- Remove Outliers -------
+
+DELETE FROM Marketing..marketing
+WHERE [ Income ] = 666666.00 -- delete entry for max income 
+
+DELETE FROM Marketing..marketing
+WHERE Year_Birth <= 1946; -- remove entries where birth year is before 1946 (aged 75 in 2021) 
+
+---- Create total dependents variable from kid & teen home variables ----
+ALTER TABLE Marketing..marketing 
+ADD Dependents int; 
+
+UPDATE Marketing..marketing
+SET Dependents = Kidhome + Teenhome
+
+---- Create total amount spent variable from all product amounts spent ----
+ALTER TABLE Marketing..marketing
+ADD MntTotal int;
+
+UPDATE Marketing..marketing
+SET MntTotal = MntWines + MntFruits + MntMeatProducts + MntFishProducts + MntSweetProducts + MntGoldProds
+---- Create total purchases variable from all sales avenues ----- 
+ALTER TABLE Marketing..marketing
+ADD TotalPurchases int;
+
+UPDATE Marketing..marketing
+SET TotalPurchases = NumDealsPurchases + NumWebPurchases + NumCatalogPurchases + NumStorePurchases
+---- Create total number of campaigns accepted from sum of previous campaigns accepted ----- 
+ALTER TABLE Marketing..marketing
+ADD AcceptedCmps int;
+
+UPDATE Marketing..marketing
+SET AcceptedCmps = AcceptedCmp1 + AcceptedCmp2 + AcceptedCmp3 + AcceptedCmp4 + AcceptedCmp5
